@@ -29,6 +29,11 @@ module "vault_cluster" {
 
   gcp_project_id = var.gcp_project_id
   gcp_region     = var.gcp_region
+  network_name        = var.network_name
+  subnetwork_name     = var.subnetwork_name
+  network_project_id  = var.gcp_project_id
+  service_account_email = var.service_account_email
+  use_external_service_account = true
 
   cluster_name     = var.vault_cluster_name
   cluster_size     = var.vault_cluster_size
@@ -50,7 +55,7 @@ module "vault_cluster" {
   # Even when the Vault cluster is pubicly accessible via a Load Balancer, we still make the Vault nodes themselves
   # private to improve the overall security posture. Note that the only way to reach private nodes via SSH is to first
   # SSH into another node that is not private.
-  assign_public_ip_addresses = true
+  assign_public_ip_addresses = false
 
   # To enable external access to the Vault Cluster, enter the approved CIDR Blocks or tags below.
   # We enable health checks from the Consul Server cluster to Vault.
@@ -66,7 +71,7 @@ data "template_file" "startup_script_vault" {
   )
 
   vars = {
-    consul_cluster_tag_name = var.consul_server_cluster_name
+    consul_cluster_tag_name = var.consul_server_cluster_tag_name
     vault_cluster_tag_name  = var.vault_cluster_name
     enable_vault_ui         = var.enable_vault_ui ? "--enable-ui" : ""
   }
@@ -76,36 +81,36 @@ data "template_file" "startup_script_vault" {
 # DEPLOY THE CONSUL SERVER CLUSTER
 # ---------------------------------------------------------------------------------------------------------------------
 
-module "consul_cluster" {
-  source = "git::git@github.com:hashicorp/terraform-google-consul.git//modules/consul-cluster?ref=v0.4.0"
+# module "consul_cluster" {
+#   source = "git::git@github.com:hashicorp/terraform-google-consul.git//modules/consul-cluster?ref=v0.4.0"
 
-  gcp_project_id = var.gcp_project_id
-  gcp_region     = var.gcp_region
+#   gcp_project_id = var.gcp_project_id
+#   gcp_region     = var.gcp_region
 
-  cluster_name     = var.consul_server_cluster_name
-  cluster_tag_name = var.consul_server_cluster_name
-  cluster_size     = var.consul_server_cluster_size
+#   cluster_name     = var.consul_server_cluster_name
+#   cluster_tag_name = var.consul_server_cluster_name
+#   cluster_size     = var.consul_server_cluster_size
 
-  source_image = var.consul_server_source_image
-  machine_type = var.consul_server_machine_type
+#   source_image = var.consul_server_source_image
+#   machine_type = var.consul_server_machine_type
 
-  startup_script = data.template_file.startup_script_consul.rendered
+#   startup_script = data.template_file.startup_script_consul.rendered
 
-  # In a production setting, we strongly recommend only launching a Consul Server cluster as private nodes.
-  # Note that the only way to reach private nodes via SSH is to first SSH into another node that is not private.
-  assign_public_ip_addresses = true
+#   # In a production setting, we strongly recommend only launching a Consul Server cluster as private nodes.
+#   # Note that the only way to reach private nodes via SSH is to first SSH into another node that is not private.
+#   assign_public_ip_addresses = true
 
-  allowed_inbound_tags_dns      = [var.vault_cluster_name]
-  allowed_inbound_tags_http_api = [var.vault_cluster_name]
-}
+#   allowed_inbound_tags_dns      = [var.vault_cluster_name]
+#   allowed_inbound_tags_http_api = [var.vault_cluster_name]
+# }
 
 # This Startup Script will run at boot configure and start Consul on the Consul Server cluster nodes
-data "template_file" "startup_script_consul" {
-  template = file(
-    "${path.module}/examples/root-example/startup-script-consul.sh",
-  )
+# data "template_file" "startup_script_consul" {
+#   template = file(
+#     "${path.module}/examples/root-example/startup-script-consul.sh",
+#   )
 
-  vars = {
-    cluster_tag_name = var.consul_server_cluster_name
-  }
-}
+#   vars = {
+#     cluster_tag_name = var.consul_server_cluster_name
+#   }
+# }

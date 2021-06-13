@@ -2,6 +2,14 @@ output "gcp_project_id" {
   value = var.gcp_project_id
 }
 
+output "gcp_project" {
+  value = var.gcp_project_id
+}
+
+output "gcp_zone" {
+  value = var.gcp_region
+}
+
 output "vault_cluster_size" {
   value = var.vault_cluster_size
 }

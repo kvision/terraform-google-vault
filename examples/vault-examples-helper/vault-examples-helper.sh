@@ -84,12 +84,12 @@ function join {
 function get_all_vault_server_property_values {
   local server_property_name="$1"
 
-  local gcp_project
+  local gcp_project_id
   local gcp_zone
   local cluster_tag_name
   local expected_num_vault_servers
 
-  gcp_project=$(get_required_terraform_output "gcp_project")
+  gcp_project_id=$(get_required_terraform_output "gcp_project_id")
   gcp_zone=$(get_required_terraform_output "gcp_zone")
   cluster_tag_name=$(get_required_terraform_output "cluster_tag_name")
   expected_num_vault_servers=$(get_required_terraform_output "vault_cluster_size")
@@ -100,7 +100,7 @@ function get_all_vault_server_property_values {
   local i
 
   for (( i=1; i<="$MAX_RETRIES"; i++ )); do
-    vals=($(get_vault_server_property_values "$gcp_project" "$gcp_zone" "$cluster_tag_name" "$server_property_name"))
+    vals=($(get_vault_server_property_values "$gcp_project_id" "$gcp_zone" "$cluster_tag_name" "$server_property_name"))
     if [[ "${#vals[@]}" -eq "$expected_num_vault_servers" ]]; then
       log_info "Found $server_property_name for all $expected_num_vault_servers expected Vault servers!"
       echo "${vals[@]}"
@@ -176,7 +176,7 @@ function wait_for_vault_server_to_come_up {
 }
 
 function get_vault_server_property_values {
-  local readonly gcp_project="$1"
+  local readonly gcp_project_id="$1"
   local readonly gcp_zone="$2"
   local readonly cluster_tag_name="$3"
   local readonly property_name="$4"
@@ -184,10 +184,10 @@ function get_vault_server_property_values {
 
   cluster_tag_name=$(get_required_terraform_output "cluster_tag_name")
 
-  log_info "Fetching external IP addresses for Vault Server Compute Instances with tag \"$cluster_tag_name\""
+  log_info "Fetching internal IP addresses for Vault Server Compute Instances with tag \"$cluster_tag_name\""
 
   instances=$(gcloud compute instances list \
-    --project "$gcp_project"\
+    --project "$gcp_project_id"\
     --filter "zone : $gcp_zone" \
     --filter "tags.items~^$cluster_tag_name\$" \
     --format "value($property_name)")
@@ -196,7 +196,7 @@ function get_vault_server_property_values {
 }
 
 function get_all_vault_server_ips {
-  get_all_vault_server_property_values "EXTERNAL_IP"
+  get_all_vault_server_property_values "INTERNAL_IP"
 }
 
 function get_all_vault_server_names {
@@ -241,19 +241,19 @@ function run {
   assert_is_installed "terraform"
   assert_is_installed "curl"
 
-  local gcp_project
+  local gcp_project_id
   local gcp_zone
   local server_ips
   local server_names
 
-  gcp_project=$(get_required_terraform_output "gcp_project")
+  gcp_project_id=$(get_required_terraform_output "gcp_project_id")
   gcp_zone=$(get_required_terraform_output "gcp_zone")
   server_ips=$(get_all_vault_server_ips)
   server_names=$(get_all_vault_server_names)
 
   wait_for_all_vault_servers_to_come_up "$server_ips"
 
-  print_instructions "$gcp_project" "$gcp_zone" "$server_names"
+  print_instructions "$gcp_project_id" "$gcp_zone" "$server_names"
 }
 
 run

@@ -13,6 +13,22 @@ variable "gcp_region" {
   type        = string
 }
 
+variable "network_name" {
+  description = "The network in which all GCP resources will be launched."
+  type        = string
+}
+
+variable "subnetwork_name" {
+  description = "The subnetwork in which all GCP resources will be launched."
+  type        = string
+}
+
+variable "service_account_email" {
+  description = "The email of the service account for the instance template. If none is provided the google cloud provider project service account is used."
+  type        = string
+  default     = null
+}
+
 variable "vault_cluster_name" {
   description = "The name of the Vault Server cluster. All resources will be namespaced by this value. E.g. vault-server-prod"
   type        = string
@@ -25,6 +41,11 @@ variable "vault_source_image" {
 
 variable "consul_server_cluster_name" {
   description = "The name of the Consul Server cluster. All resources will be namespaced by this value. E.g. consul-server-prod"
+  type        = string
+}
+
+variable "consul_server_cluster_tag_name" {
+  description = "The tag the consul server Compute Instances will look for to automatically discover each other and form a cluster. TIP: If running more than one Consul Server cluster, each cluster should have its own unique tag name. If you're not sure what to put for this value, just use the value entered in var.cluster_name."
   type        = string
 }
 

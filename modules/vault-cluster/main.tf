@@ -36,12 +36,12 @@ resource "google_project_iam_member" "vault_cluster_admin_sa_view_project" {
 }
 
 # Does the same in case we're using a service account that has been previously created
-resource "google_project_iam_member" "other_sa_view_project" {
-  count   = var.use_external_service_account ? 1 : 0
-  project = var.gcp_project_id
-  role    = "roles/viewer"
-  member  = "serviceAccount:${var.service_account_email}"
-}
+# resource "google_project_iam_member" "other_sa_view_project" {
+#   count   = var.use_external_service_account ? 1 : 0
+#   project = var.gcp_project_id
+#   role    = "roles/viewer"
+#   member  = "serviceAccount:${var.service_account_email}"
+# }
 
 # ---------------------------------------------------------------------------------------------------------------------
 # CREATE A GCE MANAGED INSTANCE GROUP TO RUN VAULT
@@ -57,21 +57,33 @@ resource "google_compute_region_instance_group_manager" "vault" {
   project = var.gcp_project_id
 
   base_instance_name = var.cluster_name
-  instance_template  = data.template_file.compute_instance_template_self_link.rendered
   region             = var.gcp_region
+
+  version {
+    instance_template = data.template_file.compute_instance_template_self_link.rendered
+  }
 
   # Restarting a Vault server has an important consequence: The Vault server has to be manually unsealed again. Therefore,
   # the update strategy used to roll out a new GCE Instance Template must be a rolling update. But since Terraform does
   # not yet support ROLLING_UPDATE, such updates must be manually rolled out for now.
-  update_strategy = var.instance_group_update_strategy
+  update_policy {
+    type                         = var.instance_group_update_policy_type
+    instance_redistribution_type = var.instance_group_update_policy_redistribution_type
+    minimal_action               = var.instance_group_update_policy_minimal_action
+    max_surge_fixed              = var.instance_group_update_policy_max_surge_fixed
+    max_surge_percent            = var.instance_group_update_policy_max_surge_percent
+    max_unavailable_fixed        = var.instance_group_update_policy_max_unavailable_fixed
+    max_unavailable_percent      = var.instance_group_update_policy_max_unavailable_percent
+    min_ready_sec                = var.instance_group_update_policy_min_ready_sec
+  }
 
   target_pools = var.instance_group_target_pools
   target_size  = var.cluster_size
 
-  depends_on = [
-    google_compute_instance_template.vault_public,
-    google_compute_instance_template.vault_private,
-  ]
+  # depends_on = [
+  #   google_compute_instance_template.vault_public,
+  #   google_compute_instance_template.vault_private,
+  # ]
 }
 
 # Create the Instance Template that will be used to populate the Managed Instance Group.
@@ -228,6 +240,12 @@ resource "google_compute_firewall" "allow_intracluster_vault" {
 
   source_tags = [var.cluster_tag_name]
   target_tags = [var.cluster_tag_name]
+
+  lifecycle {
+    ignore_changes = [
+      log_config
+    ]
+  }
 }
 
 # Specify which traffic is allowed into the Vault cluster solely for API requests
@@ -253,6 +271,11 @@ resource "google_compute_firewall" "allow_inbound_api" {
   source_ranges = var.allowed_inbound_cidr_blocks_api
   source_tags   = var.allowed_inbound_tags_api
   target_tags   = [var.cluster_tag_name]
+  lifecycle {
+    ignore_changes = [
+      log_config
+    ]
+  }
 }
 
 # If we require a Load Balancer in front of the Vault cluster, we must specify a Health Check so that the Load Balancer
@@ -278,6 +301,11 @@ resource "google_compute_firewall" "allow_inbound_health_check" {
   # Per https://goo.gl/xULu8U, all Google Cloud Health Check requests will be sent from 35.191.0.0/16
   source_ranges = ["35.191.0.0/16", "130.211.0.0/22"]
   target_tags   = [var.cluster_tag_name]
+  lifecycle {
+    ignore_changes = [
+      log_config
+    ]
+  }
 }
 
 # ---------------------------------------------------------------------------------------------------------------------
