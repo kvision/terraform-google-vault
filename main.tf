@@ -74,7 +74,34 @@ data "template_file" "startup_script_vault" {
     consul_cluster_tag_name = var.consul_server_cluster_tag_name
     vault_cluster_tag_name  = var.vault_cluster_name
     enable_vault_ui         = var.enable_vault_ui ? "--enable-ui" : ""
+    gcp_project_id          = var.gcp_project_id
+    keyring_location        = var.keyring_location
+    key_ring                = var.key_ring
+    crypto_key              = var.crypto_key
   }
+}
+
+resource "google_kms_key_ring" "key_ring" {
+  project  = "${var.gcp_project_id}"
+  name     = "${var.key_ring}"
+  location = "${var.keyring_location}"
+}
+
+resource "google_kms_crypto_key" "crypto_key" {
+  name            = "${var.crypto_key}"
+  key_ring        = "${google_kms_key_ring.key_ring.self_link}"
+  rotation_period = "100000s"
+}
+
+# Add the service account to the Keyring
+resource "google_kms_key_ring_iam_binding" "vault_iam_kms_binding" {
+  # key_ring_id = "${google_kms_key_ring.key_ring.id}"
+  key_ring_id = "${var.gcp_project_id}/${var.keyring_location}/${var.key_ring}"
+  role = "roles/owner"
+
+  members = [
+    "serviceAccount:${var.service_account_email}",
+  ]
 }
 
 # ---------------------------------------------------------------------------------------------------------------------

@@ -19,7 +19,7 @@ output "instance_group_url" {
 }
 
 output "instance_template_url" {
-  value = data.template_file.compute_instance_template_self_link.rendered
+  value = google_compute_instance_template.vault_private[0].self_link
 }
 
 output "firewall_rule_allow_intracluster_vault_url" {

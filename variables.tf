@@ -54,10 +54,25 @@ variable "consul_server_source_image" {
   type        = string
 }
 
+variable "key_ring" {
+  description = "Cloud KMS key ring name to create"
+  type        = string
+}
+
+variable "crypto_key" {
+  description = "Crypto key name to create under the key ring"
+  type        = string
+}
+
 # ---------------------------------------------------------------------------------------------------------------------
 # OPTIONAL PARAMETERS
 # These parameters have reasonable defaults.
 # ---------------------------------------------------------------------------------------------------------------------
+
+variable "keyring_location" {
+  default = "global"
+  type        = string
+}
 
 variable "network_project_id" {
   description = "The name of the GCP Project where the network is located. Useful when using networks shared between projects. If empty, var.gcp_project_id will be used."

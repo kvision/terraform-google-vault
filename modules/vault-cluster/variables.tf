@@ -155,10 +155,15 @@ variable "instance_group_update_policy_minimal_action" {
   default     = "REPLACE"
 }
 
+variable "instance_group_update_replacement_method" {
+  type        = string
+  default     = "SUBSTITUTE"
+}
+
 variable "instance_group_update_policy_max_surge_fixed" {
   description = "The maximum number of instances that can be created above the specified targetSize during the update process. Conflicts with var.instance_group_update_policy_max_surge_percent. See https://www.terraform.io/docs/providers/google/r/compute_region_instance_group_manager.html#max_surge_fixed for more information."
   type        = number
-  default     = 3
+  default     = null
 }
 
 variable "instance_group_update_policy_max_surge_percent" {
@@ -182,7 +187,7 @@ variable "instance_group_update_policy_max_unavailable_percent" {
 variable "instance_group_update_policy_min_ready_sec" {
   description = "Minimum number of seconds to wait for after a newly created instance becomes available. This value must be between 0-3600."
   type        = number
-  default     = 300
+  default     = 90
 }
 
 # Metadata
